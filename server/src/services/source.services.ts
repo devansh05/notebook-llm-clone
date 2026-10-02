@@ -3,7 +3,16 @@ import {
   ListSourcesQuery,
   CreateSourceInput,
 } from "../validators/source.validators.js";
-import { findSourcesByWorkspaceId } from "../repositories/sources.repository.js";
+import {
+  findSourcesByWorkspaceId,
+  findSourceByIdAndWorkspaceId,
+  deleteSourceRecord,
+  findSourceById,
+  createSourceRecord,
+  type SourceRecord,
+} from "../repositories/sources.repository.js";
+
+import { NotFoundError } from "../types/app-error.js";
 
 async function assertWorkspaceAccess(workspaceId: string, userId: string) {
   await getWorkspaceByIdForUser(workspaceId, userId);
@@ -32,4 +41,41 @@ export async function createTextOrMarkdownSource(
   //     content: input.content,
   //     status: "PENDING",
   // });
+}
+
+export async function getSourceForWorkspace(
+  workspaceId: string,
+  sourceId: string,
+  userId: string,
+): Promise<SourceRecord> {
+  await assertWorkspaceAccess(workspaceId, userId);
+
+  const source = await findSourceByIdAndWorkspaceId(sourceId, workspaceId);
+
+  if (!source) {
+    throw new NotFoundError("Source not found");
+  }
+
+  return source;
+}
+
+export async function deleteSourceForWorkspace(
+  workspaceId: string,
+  sourceId: string,
+  userId: string,
+) {
+  await getSourceForWorkspace(workspaceId, sourceId, userId);
+  await deleteSourceRecord(sourceId);
+}
+
+export async function bulkDeleteSourcesForWorkspace(
+  workspaceId: string,
+  userId: string,
+  sourceIds: string[],
+) {
+  await assertWorkspaceAccess(workspaceId, userId);
+
+  for (const sourceId of sourceIds) {
+    await deleteSourceForWorkspace(workspaceId, sourceId, userId);
+  }
 }

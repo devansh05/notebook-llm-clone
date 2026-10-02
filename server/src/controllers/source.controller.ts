@@ -1,6 +1,9 @@
 import {
   createTextOrMarkdownSource,
   listSourcesForWorkspace,
+  bulkDeleteSourcesForWorkspace,
+  deleteSourceForWorkspace,
+  getSourceForWorkspace,
 } from "../services/source.services.js";
 import { ValidationError } from "../types/app-error.js";
 import { workspaceIdParamSchema } from "../validators/workspace.validator.js";
@@ -9,6 +12,7 @@ import {
   createSourceSchema,
   listSourcesQuerySchema,
   sourceIdParamSchema,
+  bulkDeleteSourcesSchema,
 } from "../validators/source.validators.js";
 import type { Request, Response } from "express";
 
@@ -84,4 +88,44 @@ export async function createSource(req: Request, res: Response) {
     input,
   );
   res.status(201).json(source);
+}
+
+function parseBulkDeleteBody(body: unknown) {
+  const parsed = bulkDeleteSourcesSchema.safeParse(body);
+
+  if (!parsed.success) {
+    throw new ValidationError(
+      "Validation failed",
+      getZodFieldErrors(parsed.error),
+    );
+  }
+
+  return parsed.data;
+}
+
+export async function getSource(req: Request, res: Response) {
+  const { workspaceId, sourceId } = parseSourceParams(req.params);
+  const source = await getSourceForWorkspace(
+    workspaceId,
+    sourceId,
+    req.session.user.id,
+  );
+  res.json(source);
+}
+
+export async function deleteSource(req: Request, res: Response) {
+  const { workspaceId, sourceId } = parseSourceParams(req.params);
+  await deleteSourceForWorkspace(workspaceId, sourceId, req.session.user.id);
+  res.status(204).send();
+}
+
+export async function bulkDeleteSources(req: Request, res: Response) {
+  const { workspaceId } = parseWorkspaceId(req.params);
+  const input = parseBulkDeleteBody(req.body);
+  await bulkDeleteSourcesForWorkspace(
+    workspaceId,
+    req.session.user.id,
+    input.sourceIds,
+  );
+  res.status(204).send();
 }
