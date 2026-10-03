@@ -24,6 +24,7 @@
     "multer": "^2.4.0",
     "pg": "^8.23.0",
     "prisma": "7.10.0",
+    "unpdf": "^1.8.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {

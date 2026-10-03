@@ -1,4 +1,6 @@
 import { getWorkspaceByIdForUser } from "./workspace.services.js";
+import { uploadPdfToCloudinary } from "../lib/cloudinary.js";
+import { extractPdfFromBuffer } from "../lib/pdf.js";
 import {
   ListSourcesQuery,
   CreateSourceInput,
@@ -114,4 +116,42 @@ async function createAndProcessSource(
   // });
 
   return source;
+}
+
+export async function uploadPdfSource(
+  workspaceId: string,
+  userId: string,
+  file: Express.Multer.File,
+  title?: string,
+) {
+  await getWorkspaceByIdForUser(workspaceId, userId);
+
+  const upload = await uploadPdfToCloudinary(file.buffer, file.originalname);
+
+  let content: string | null = null;
+  let pageCount: number | undefined;
+
+  try {
+    const extracted = await extractPdfFromBuffer(file.buffer);
+    content = extracted.text;
+    pageCount = extracted.pageCount;
+  } catch {
+    // Inngest will retry extraction from Cloudinary if upload-time parse fails.
+  }
+
+  return createAndProcessSource({
+    workspaceId,
+    type: "PDF",
+    title: title?.trim() || file.originalname.replace(/\.pdf$/i, ""),
+    content,
+    status: "PENDING",
+    metadata: {
+      fileUrl: upload.secureUrl,
+      fileName: upload.originalFilename,
+      fileSize: upload.bytes,
+      publicId: upload.publicId,
+      resourceType: upload.resourceType,
+      pageCount,
+    },
+  });
 }
