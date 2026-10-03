@@ -5,6 +5,7 @@ import {
   ListSourcesQuery,
   CreateSourceInput,
   ImportWebsiteInput,
+  ImportYoutubeInput,
 } from "../validators/source.validators.js";
 import {
   findSourcesByWorkspaceId,
@@ -16,6 +17,7 @@ import {
 } from "../repositories/sources.repository.js";
 import { NotFoundError } from "../types/app-error.js";
 import { scrapeWebsite } from "../lib/firecrawl.js";
+import { fetchYoutubeTranscript } from "../lib/youtube.js";
 
 async function assertWorkspaceAccess(workspaceId: string, userId: string) {
   await getWorkspaceByIdForUser(workspaceId, userId);
@@ -152,6 +154,28 @@ export async function uploadPdfSource(
       publicId: upload.publicId,
       resourceType: upload.resourceType,
       pageCount,
+    },
+  });
+}
+
+export async function importYoutubeSource(
+  workspaceId: string,
+  userId: string,
+  input: ImportYoutubeInput,
+) {
+  await getWorkspaceByIdForUser(workspaceId, userId);
+
+  const transcript = await fetchYoutubeTranscript(input.url);
+
+  return createAndProcessSource({
+    workspaceId,
+    type: "YOUTUBE",
+    title: input.title || `YouTube: ${transcript.videoId}`,
+    content: transcript.content,
+    url: input.url,
+    status: "PENDING",
+    metadata: {
+      videoId: transcript.videoId,
     },
   });
 }

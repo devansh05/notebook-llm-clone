@@ -6,6 +6,7 @@ import {
   getSourceForWorkspace,
   importWebsiteSource,
   uploadPdfSource,
+  importYoutubeSource,
 } from "../services/source.services.js";
 import { ValidationError } from "../types/app-error.js";
 import { workspaceIdParamSchema } from "../validators/workspace.validator.js";
@@ -16,6 +17,7 @@ import {
   sourceIdParamSchema,
   bulkDeleteSourcesSchema,
   importWebsiteSchema,
+  importYoutubeSchema,
 } from "../validators/source.validators.js";
 import type { Request, Response } from "express";
 
@@ -160,5 +162,16 @@ export async function uploadPdf(req: Request, res: Response) {
     title,
   );
 
+  res.status(201).json(source);
+}
+
+export async function importYoutube(req: Request, res: Response) {
+  const { workspaceId } = workspaceIdParamSchema.parse(req.params);
+  const input = importYoutubeSchema.parse(req.body);
+  const source = await importYoutubeSource(
+    workspaceId,
+    req.session.user.id,
+    input,
+  );
   res.status(201).json(source);
 }
