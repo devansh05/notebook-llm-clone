@@ -2,6 +2,7 @@ import { getWorkspaceByIdForUser } from "./workspace.services.js";
 import {
   ListSourcesQuery,
   CreateSourceInput,
+  ImportWebsiteInput,
 } from "../validators/source.validators.js";
 import {
   findSourcesByWorkspaceId,
@@ -11,8 +12,8 @@ import {
   createSourceRecord,
   type SourceRecord,
 } from "../repositories/sources.repository.js";
-
 import { NotFoundError } from "../types/app-error.js";
+import { scrapeWebsite } from "../lib/firecrawl.js";
 
 async function assertWorkspaceAccess(workspaceId: string, userId: string) {
   await getWorkspaceByIdForUser(workspaceId, userId);
@@ -78,4 +79,39 @@ export async function bulkDeleteSourcesForWorkspace(
   for (const sourceId of sourceIds) {
     await deleteSourceForWorkspace(workspaceId, sourceId, userId);
   }
+}
+
+export async function importWebsiteSource(
+  workspaceId: string,
+  userId: string,
+  input: ImportWebsiteInput,
+) {
+  await getWorkspaceByIdForUser(workspaceId, userId);
+
+  const scraped = await scrapeWebsite(input.url);
+
+  return createAndProcessSource({
+    workspaceId,
+    type: "WEBSITE",
+    title: input.title || scraped.title || input.url,
+    content: scraped.markdown,
+    url: scraped.sourceUrl,
+    status: "PENDING",
+    metadata: {
+      importedFrom: scraped.sourceUrl,
+    },
+  });
+}
+
+async function createAndProcessSource(
+  data: Parameters<typeof createSourceRecord>[0],
+) {
+  const source = await createSourceRecord(data); //
+
+  // await enqueueSourceProcessing({
+  //   sourceId: source.id,
+  //   workspaceId: source.workspaceId,
+  // });
+
+  return source;
 }

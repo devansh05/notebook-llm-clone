@@ -4,6 +4,7 @@ import {
   bulkDeleteSourcesForWorkspace,
   deleteSourceForWorkspace,
   getSourceForWorkspace,
+  importWebsiteSource
 } from "../services/source.services.js";
 import { ValidationError } from "../types/app-error.js";
 import { workspaceIdParamSchema } from "../validators/workspace.validator.js";
@@ -13,6 +14,7 @@ import {
   listSourcesQuerySchema,
   sourceIdParamSchema,
   bulkDeleteSourcesSchema,
+  importWebsiteSchema
 } from "../validators/source.validators.js";
 import type { Request, Response } from "express";
 
@@ -128,4 +130,15 @@ export async function bulkDeleteSources(req: Request, res: Response) {
     input.sourceIds,
   );
   res.status(204).send();
+}
+
+export async function importWebsite(req: Request, res: Response) {
+    const { workspaceId } = workspaceIdParamSchema.parse(req.params);
+    const input = importWebsiteSchema.parse(req.body);
+    const source = await importWebsiteSource(
+        workspaceId,
+        req.session.user.id,
+        input,
+    );
+    res.status(201).json(source);
 }
