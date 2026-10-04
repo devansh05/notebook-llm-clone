@@ -94,3 +94,18 @@ export function createSourceRecord(data: CreateSourceData) {
     select: sourceSelect,
   });
 }
+
+export function updateSourceRecord(
+  sourceId: string,
+  data: {
+    content?: string | null;
+    status?: SourceRecord["status"];
+    metadata?: Prisma.InputJsonValue;
+  },
+) {
+  return prisma.source.update({
+    where: { id: sourceId },
+    data,
+    select: sourceSelect,
+  });
+}
