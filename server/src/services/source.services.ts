@@ -18,6 +18,7 @@ import {
 import { NotFoundError } from "../types/app-error.js";
 import { scrapeWebsite } from "../lib/firecrawl.js";
 import { fetchYoutubeTranscript } from "../lib/youtube.js";
+import { enqueueSourceProcessing } from "../lib/source-events.js";
 
 async function assertWorkspaceAccess(workspaceId: string, userId: string) {
   await getWorkspaceByIdForUser(workspaceId, userId);
@@ -112,10 +113,10 @@ async function createAndProcessSource(
 ) {
   const source = await createSourceRecord(data); //
 
-  // await enqueueSourceProcessing({
-  //   sourceId: source.id,
-  //   workspaceId: source.workspaceId,
-  // });
+  await enqueueSourceProcessing({
+    sourceId: source.id,
+    workspaceId: source.workspaceId,
+  });
 
   return source;
 }
