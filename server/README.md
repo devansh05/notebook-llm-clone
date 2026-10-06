@@ -65,6 +65,8 @@ PDF chunks retain page numbers, allowing responses to include page-aware citatio
 
 ## Architecture
 
+![Notebook LLM Clone RAG backend architecture](../docs/assets/notebook-llm-rag-architecture.png)
+
 The server follows a layered architecture:
 
 ```text
